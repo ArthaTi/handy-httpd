@@ -152,16 +152,17 @@ struct MultiValueMap(
     }
 
     /**
-     * Adds a single key -> value pair to the map, with time complexity of
-     * O(n*log(n)) due to sorting the new entry by its key.
+     * Adds one or more key -> value pairs to the map under a single key,
+     * with time complexity of O(n*log(n)) due to sorting the new entry by
+     * its key. Preserves existing values, if present.
      * Params:
      *   k = The key.
-     *   v = The value associated with the key.
+     *   v = Value associated with the key.
      */
-    void add(KeyType k, ValueType v) {
+    void add(KeyType k, ValueType[] v...) {
         long idx = indexOf(k);
         if (idx == -1) {
-            entries ~= Entry(k, [v]);
+            entries ~= Entry(k, v.dup);
             import std.algorithm.sorting : sort;
             sort!((a, b) => KeySort(a.key, b.key))(entries);
         } else {
@@ -445,4 +446,15 @@ unittest {
     builder.add("a", "123");
     builder.add("a", "456");
     assert(builder.build()[] == [StringMultiValueMap.Entry("a", ["123", "456"])], builder.build().toString);
+}
+
+unittest {
+    MultiValueMap!(string, string) map;
+    map.add("single", "one");
+    map.add("multiple", ["one", "two"]);
+    assert(map.getAll("single") == ["one"]);
+    assert(map.getAll("multiple") == ["one", "two"]);
+
+    map.add("multiple", ["three"]);
+    assert(map.getAll("multiple") == ["one", "two", "three"]);
 }
